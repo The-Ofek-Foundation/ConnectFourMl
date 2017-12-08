@@ -924,6 +924,14 @@ function efficiencyTest() {
 	}, 1);
 }
 
+exports.testMlSpeed = function(totalTrials, fileName) {
+	mlmode = true;
+	loadMlStates(fileName, function(lines) {
+		mlstates = new MlStates(lines);
+		speedTest(totalTrials);
+	});
+}
+
 function speedTest(totalTrials) {
 	totalTrials = totalTrials || 5E5;
 	globalRoot = createMctsRoot();
@@ -931,7 +939,7 @@ function speedTest(totalTrials) {
 	while (globalRoot.totalTries < totalTrials)
 		globalRoot.chooseChild(boardCopy(board), board2dCopy(board2dGlobal));
 	let elapsedTime = (new Date().getTime() - startTime) / 1E3;
-	console.log(numberWithCommas(Math.round(globalRoot.totalTries / elapsedTime)) + ' simulations per second.');
+	console.log(Math.round(globalRoot.totalTries / elapsedTime) + ' simulations per second.');
 }
 
 function runMcts2(times, threshold, aiId) {
@@ -1046,28 +1054,28 @@ function mlEvaluate(numGames, nT) {
 		switch (over) {
 			case 0:
 				if (output)
-					console.log("tie");
+					console.log(I + " tie");
 				break;
 			case 1:
 				if (I % 2 === 0) {
 					v11++;
 					if (output)
-						console.log("c1 wins");
+						console.log(I + " c1 wins");
 				} else {
 					v21++;
 					if (output)
-						console.log("c2 wins");
+						console.log(I + " c2 wins");
 				}
 				break;
 			case 2:
 				if (I % 2 === 0) {
 					v22++;
 					if (output)
-						console.log("c2 wins");
+						console.log(I + " c2 wins");
 				} else {
 					v12++;
 					if (output)
-						console.log("c1 wins");
+						console.log(I + " c1 wins");
 				}
 				break;
 		}
@@ -1079,8 +1087,8 @@ function mlEvaluate(numGames, nT) {
 	console.log(`Total:  ${v11 + v12} vs ${v21 + v22}`);
 	console.log(`First:  ${v11} vs ${v21}`);
 	console.log(`Second: ${v12} vs ${v22}`);
+	console.log("\n");
 }
-console.log("\n");
 
 exports.mlTest = function(numGames, nT, fileName) {
 	loadMlStates(fileName, function(lines) {

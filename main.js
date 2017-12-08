@@ -1,5 +1,5 @@
 var script = require('./script');
 
-script.mlSimulateGames(100000, 1000, "trueml.states");
+script.mlSimulateGames(parseInt(process.argv[3]), parseInt(process.argv[4]), process.argv[2]);
 
 

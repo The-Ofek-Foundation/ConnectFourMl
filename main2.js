@@ -1,3 +1,3 @@
 var script = require('./script');
 
-script.mlTest(20, 1000, "trueml.mctsstates42");
+script.mlTest(parseInt(process.argv[3]), parseInt(process.argv[4]), process.argv[2]);
