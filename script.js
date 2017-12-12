@@ -970,7 +970,7 @@ function mlSimulateR(numGames, nT, fileName) {
 		console.log('Done');
 		return;
 	}
-	for (var I = 0; I < numGames && I < 1000; I++) {
+	for (var I = 0; I < numGames && I < 500; I++) {
 		numTrials = nT;
 		over = -1;
 		board = new Array(dimensions[0]);
@@ -1014,7 +1014,7 @@ function mlSimulateR(numGames, nT, fileName) {
 		if ((I + 1) % 100 === 0) console.log(I + 1);
 	}
 	mlstates.saveToFile(fileName, function() {
-		mlSimulateR(numGames - 1000, nT, fileName);
+		mlSimulateR(numGames - 500, nT, fileName);
 	});
 }
 
@@ -1099,6 +1099,7 @@ exports.mlTest = function(numGames, nT, fileName) {
 
 exports.mlSimulateGames = function(numGames, nT, fileName) {
 	mlmode = true;
+	expansionConstant = 5;
 	loadMlStates(fileName, function(lines) {
 		mlstates = new MlStates(lines);
 		mlSimulateR(numGames, nT, fileName);
@@ -1231,6 +1232,16 @@ class MlState {
 	toString() {
 		return this.hash.join(' ') + ' ' + this.results.join(' ');
 	}
+}
+
+function getTrueHash(hash) {
+	var trueHash = 0;
+	for (var i = 0; i < 7; i++) {
+		var c = hash[i] + 48;
+		trueHash = (trueHash <<  5) - trueHash + c;
+		trueHash = trueHash & trueHash;
+	}
+	return trueHash;
 }
 
 
