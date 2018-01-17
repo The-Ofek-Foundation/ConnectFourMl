@@ -1099,7 +1099,7 @@ exports.mlTest = function(numGames, nT, fileName) {
 
 exports.mlSimulateGames = function(numGames, nT, fileName) {
 	mlmode = true;
-	expansionConstant = 5;
+	expansionConstant = 10;
 	loadMlStates(fileName, function(lines) {
 		mlstates = new MlStates(lines);
 		mlSimulateR(numGames, nT, fileName);
@@ -1141,6 +1141,8 @@ class MlStates {
 			var char = position.charAt(i);
 			p += char;
 			var col = parseInt(char) - 1;
+			if (typeof col !== 'number')
+				return;
 			hash[col] += (i % 2 + 1) * Math.pow(3, height[col]);
 			height[col]++;
 			var state = this.createState(hash);
