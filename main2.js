@@ -1,4 +1,4 @@
-var script = require('./script');
+var script = require('./uttt');
 
 // Total:  8338 vs 860
 // First:  3744 vs 176
@@ -10,6 +10,6 @@ var script = require('./script');
 // Second: 4468 vs 833
 
 
-
+// <file-name> <num-games> <num-trials>
 
 script.mlTest(parseInt(process.argv[3]), parseInt(process.argv[4]), process.argv[2]);

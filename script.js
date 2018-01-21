@@ -1037,9 +1037,6 @@ function mlEvaluate(numGames, nT) {
 
 		redTurnGlobal = true;
 		position = "";
-		// globalRoot = createMctsRoot();
-
-		// r1 = createMctsRoot(), r2 = createMctsRoot();
 
 
 		while (over < 0) {

@@ -31,7 +31,7 @@ var prevMove;
 var xTurnGlobal;
 var ponder, pondering;
 var timeToThink;
-var certaintyThreshold = 0.05;
+var certaintyThreshold = 0.005;
 var wrapperTop;
 var numChoose1, numChoose2, numChoose3, lnc1, lnc2, lnc3, stopChoose;
 var anti, tie;
@@ -725,7 +725,6 @@ function MCTSSimulate(father, tboard, emptySpots, totalEmpty, playMoveResult) {
 			return mlresult == (father.turn ? 1:2) ? 1:-1;
 		}
 	}
-
 
 	if (playMoveResult === 1 && totalEmpty <= 54 && gameOver(tboard, father.turn ? 6:5, father.lastMove))
 		if (tie)
@@ -1460,13 +1459,15 @@ exports.mlSimulateGames = function(numGames, nT, fileName) {
 };
 
 function mlSimulateR(numGames, timeToThink, fileName) {
-	var output = true;
+	var output = false;
+	var startTime = new Date().getTime();
 
 	if (numGames <= 0) {
 		console.log('Done');
 		return;
 	}
-	for (var I = 0; I < numGames && I < 500; I++) {
+	var NUM_GAMES_PER_SAVE = 100;
+	for (var I = 0; I < numGames && I < NUM_GAMES_PER_SAVE; I++) {
 		over = false;
 		prevMove = false;
 		board = new Array(9);
@@ -1490,26 +1491,107 @@ function mlSimulateR(numGames, timeToThink, fileName) {
 			runMCTS(timeToThink);
 			fpaim();
 		}
+		if (output)
+			switch (over) {
+				case 'tie':
+					console.log("tie");
+					break;
+				case 5:
+					console.log("first player wins");
+					break;
+				case 6:
+					console.log("second player wins");
+					break;
+			}
+		mlstates.incrementLines(boardHistory, over);
+		if ((I + 1) % (NUM_GAMES_PER_SAVE / 5) === 0) console.log(I + 1);
+	}
+	var endTime = new Date().getTime();
+	var elapsedTime = (endTime - startTime) / 1E3;
+	mlstates.saveToFile(fileName, function() {
+		console.log(`Average Seconds Per Game = ${elapsedTime / NUM_GAMES_PER_SAVE}`)
+		mlSimulateR(numGames - NUM_GAMES_PER_SAVE, timeToThink, fileName);
+	});
+}
+
+exports.mlTest = function(numGames, nT, fileName) {
+	loadMlStates(fileName, function(lines) {
+		mlstates = new MlStates(lines);
+		mlEvaluate(numGames, nT, fileName);
+	});
+}
+
+var output;
+
+function mlEvaluate(numGames, timeToThink, fileName) {
+	output = true;
+	var v11 = 0, v12 = 0, v21 = 0, v22 = 0;
+	expansionConstant = 1.03125;
+
+	for (var I = 0; I < numGames; I++) {
+		over = false;
+		prevMove = false;
+		board = new Array(9);
+		for (var i = 0; i < board.length; i++) {
+			board[i] = new Array(9);
+			for (var a = 0; a < board[i].length; a++)
+				board[i][a] = 0;
+		}
+
+		xTurnGlobal = true;
+		totalEmptyGlobal = 9 * 9;
+		emptySpotsGlobal = getEmptySpots(board);
+		maxState = currState = 0;
+		boardHistory = new Array(totalEmptyGlobal);
+		saveBoard();
+
+		globalRoot = createMCTSRoot();
+
+
+
+		while (over === false) {
+			mlmode = xTurnGlobal === (I % 2 === 0);
+			runMCTS(timeToThink);
+			fpaim();
+		}
+
 		switch (over) {
 			case 'tie':
 				if (output)
-					console.log("tie");
+					console.log(I + " tie");
 				break;
 			case 5:
-				if (output)
-					console.log("first player wins");
+				if (I % 2 === 0) {
+					v11++;
+					if (output)
+						console.log(I + " c1 wins");
+				} else {
+					v21++;
+					if (output)
+						console.log(I + " c2 wins");
+				}
 				break;
 			case 6:
-				if (output)
-					console.log("second player wins");
+				if (I % 2 === 0) {
+					v22++;
+					if (output)
+						console.log(I + " c2 wins");
+				} else {
+					v12++;
+					if (output)
+						console.log(I + " c1 wins");
+				}
 				break;
 		}
-		mlstates.incrementLines(boardHistory, over);
 		if ((I + 1) % 100 === 0) console.log(I + 1);
 	}
-	mlstates.saveToFile(fileName, function() {
-		mlSimulateR(numGames - 500, timeToThink, fileName);
-	});
+	console.log("!!!!!!!!");
+	console.log("!!!!!!!!\n");
+	console.log('Ml vs No Ml');
+	console.log(`Total:  ${v11 + v12} vs ${v21 + v22}`);
+	console.log(`First:  ${v11} vs ${v21}`);
+	console.log(`Second: ${v12} vs ${v22}`);
+	console.log("\n");
 }
 
 
