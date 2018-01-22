@@ -1203,7 +1203,7 @@ class MlStates {
 	}
 
 	saveToFile(fileName, callback) {
-		let writeStream = fs.createWriteStream(fileName);
+		let writeStream = fs.createWriteStream(fileName + this.states.length); // unique file name (for stats)
 
 		console.log("Saving states...");
 
@@ -1212,7 +1212,7 @@ class MlStates {
 
 		// the finish event is emitted when all data has been flushed from the stream
 		writeStream.on('finish', () => {
-			console.log('Saved ' + this.states.length + " states.");
+			console.log(`Saved ${this.states.length} states.`);
 			callback();
 		});
 

@@ -12,4 +12,4 @@ var script = require('./uttt');
 
 // <file-name> <num-games> <num-trials>
 
-script.mlTest(parseInt(process.argv[3]), parseInt(process.argv[4]), process.argv[2]);
+script.mlTest(parseInt(process.argv[3]), parseFloat(process.argv[4]), process.argv[2]);

@@ -136,10 +136,11 @@ function getSettings() {
 	timeToThink = gameSettings.getOrSet('timeToThink', 1);
 }
 
-function saveBoard() {
+function saveBoard(lastMove) {
 	boardHistory[currState++] = {
 		'board': simpleBoardCopy(board),
 		'xTurnGlobal': xTurnGlobal,
+		'lastMove': lastMove,
 	};
 }
 
@@ -402,7 +403,7 @@ function setTurn(turn, move) {
 		globalRoot.parent = null;
 	else globalRoot = createMCTSRoot();
 
-	saveBoard();
+	saveBoard(move);
 }
 
 
@@ -672,10 +673,16 @@ function MCTSGetChildren(father, tboard) {
 						children.push(new MCTSNode(father, !turn, [i, a]));
 			return children;
 		}
-	} else {
-		for (i = 0; i < 9; i++)
-			for (a = 0; a < 9; a++)
-				children.push(new MCTSNode(father, !turn, [i, a]));
+	} else { // new game
+		children.push(new MCTSNode(father, !turn, [0, 0]));
+		children.push(new MCTSNode(father, !turn, [1, 0]));
+		children.push(new MCTSNode(father, !turn, [1, 1]));
+		children.push(new MCTSNode(father, !turn, [3, 0]));
+		children.push(new MCTSNode(father, !turn, [4, 0]));
+		children.push(new MCTSNode(father, !turn, [4, 1]));
+		children.push(new MCTSNode(father, !turn, [3, 3]));
+		children.push(new MCTSNode(father, !turn, [4, 3]));
+		children.push(new MCTSNode(father, !turn, [4, 4]));
 		return children;
 	}
 
@@ -716,7 +723,7 @@ function MCTSSimulate(father, tboard, emptySpots, totalEmpty, playMoveResult) {
 
 
 	if (mlmode) {
-		var mlresult = mlstates.getResult(father.turn, tboard);
+		var mlresult = mlstates.getResult(father.lastMove, tboard);
 
 		if (mlresult != -1) {
 			mlassists++;
@@ -1482,7 +1489,7 @@ function mlSimulateR(numGames, timeToThink, fileName) {
 		emptySpotsGlobal = getEmptySpots(board);
 		maxState = currState = 0;
 		boardHistory = new Array(totalEmptyGlobal);
-		saveBoard();
+		saveBoard(null);
 
 		globalRoot = createMCTSRoot();
 
@@ -1525,7 +1532,7 @@ var output;
 
 function mlEvaluate(numGames, timeToThink, fileName) {
 	output = true;
-	var v11 = 0, v12 = 0, v21 = 0, v22 = 0;
+	var v11 = 0, v12 = 0, v21 = 0, v22 = 0, t1 = 0, t2 = 0;
 	expansionConstant = 1.03125;
 
 	for (var I = 0; I < numGames; I++) {
@@ -1543,7 +1550,7 @@ function mlEvaluate(numGames, timeToThink, fileName) {
 		emptySpotsGlobal = getEmptySpots(board);
 		maxState = currState = 0;
 		boardHistory = new Array(totalEmptyGlobal);
-		saveBoard();
+		saveBoard(null);
 
 
 		while (over === false) {
@@ -1555,8 +1562,15 @@ function mlEvaluate(numGames, timeToThink, fileName) {
 
 		switch (over) {
 			case 'tie':
-				if (output)
-					console.log(I + " tie");
+				if (I % 2 === 0) {
+					t1++;
+					if (output)
+						console.log(I + " ml ties first");
+				} else {
+					t2++;
+					if (output)
+						console.log(I + " ml ties second");
+				}
 				break;
 			case 5:
 				if (I % 2 === 0) {
@@ -1586,9 +1600,10 @@ function mlEvaluate(numGames, timeToThink, fileName) {
 	console.log("!!!!!!!!");
 	console.log("!!!!!!!!\n");
 	console.log('Ml vs No Ml');
-	console.log(`Total:  ${v11 + v12} vs ${v21 + v22}`);
-	console.log(`First:  ${v11} vs ${v21}`);
-	console.log(`Second: ${v12} vs ${v22}`);
+	console.log(`Total:  ${v11 + v12} vs ${v21 + v22} (${t1 + t2} ties)`);
+	console.log(`First:  ${v11} vs ${v21} (${t1})`);
+	console.log(`Second: ${v12} vs ${v22} (${t2})`);
+	console.log(`${v11} ${v12} ${v21} ${v22} ${t1} ${t2}`);
 	console.log("\n");
 }
 
@@ -1612,7 +1627,7 @@ class MlStates {
 				return;
 
 
-			var hash = getHash(boardHistory[i].xTurnGlobal, boardHistory[i].board);
+			var hash = getHash(boardHistory[i].lastMove, boardHistory[i].board);
 
 			var state = this.createState(hash);
 			state.results[result]++;
@@ -1654,19 +1669,19 @@ class MlStates {
 	getState(line) {
 		var vals = line.split(' ');
 
-		var hash = new Array(10);
+		var hash = new Array(11);
 		for (var i = 0; i < hash.length; i++)
 			hash[i] = parseInt(vals[i]);
 
-		var ties = parseInt(vals[10]);
-		var xs = parseInt(vals[11]);
-		var os = parseInt(vals[12]);
+		var ties = parseInt(vals[11]);
+		var xs = parseInt(vals[12]);
+		var os = parseInt(vals[13]);
 
 		return new MlState(hash, [ties, xs, os]);
 	}
 
-	getResult(turn, board) {
-		var hash = getHash(turn, board);
+	getResult(lastMove, board) {
+		var hash = getHash(lastMove, board);
 		var state = this.findState(hash);
 		if (state === -1)
 			return -1;
@@ -1686,16 +1701,16 @@ class MlStates {
 	}
 
 	saveToFile(fileName, callback) {
-		let writeStream = fs.createWriteStream(fileName);
+		let writeStream = fs.createWriteStream(fileName + this.states.length);
 
 		console.log("Saving states...");
 
-		for (var state of this.states)
+		for (let state of this.states)
 			writeStream.write(state.toString() + '\n');
 
 		// the finish event is emitted when all data has been flushed from the stream
 		writeStream.on('finish', () => {
-			console.log('Saved ' + this.states.length + " states.");
+			console.log(`Saved ${this.states.length} states.`);
 			callback();
 		});
 
@@ -1715,17 +1730,25 @@ class MlState {
 	}
 }
 
-function getHash(turn, board) {
-	var hash = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+function getHash(lastMove, board) {
+	var hash = [-1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-	hash[0] = turn ? 1:2;
+	if (lastMove !== null) {
+		hash[0] = lastMove[0];
+		hash[1] = lastMove[1];
+	}
+
 
 	for (var i = 0; i < board.length; i++)
 		for (var a = 0; a < board[i].length; a++)
 			if (board[i][a] !== 0)
-				hash[i + 1] += board[i][a] * Math.pow(7, a);
+				hash[i + 2] += getColor(board[i][a]) * Math.pow(3, a);
 
 	return hash;
+}
+
+function getColor(piece) {
+	return (piece - 1) % 2 + 1;
 }
 
 function compare(state, hash) {
