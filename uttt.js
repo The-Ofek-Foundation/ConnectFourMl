@@ -708,7 +708,7 @@ function getEmptySpots(tboard) {
 	return emptySpots;
 }
 
-var mlassists;
+var mlassists = 0;
 
 function MCTSSimulate(father, tboard, emptySpots, totalEmpty, playMoveResult) {
 	if (father.result !== 10)
@@ -1545,11 +1545,9 @@ function mlEvaluate(numGames, timeToThink, fileName) {
 		boardHistory = new Array(totalEmptyGlobal);
 		saveBoard();
 
-		globalRoot = createMCTSRoot();
-
-
 
 		while (over === false) {
+			globalRoot = createMCTSRoot(); // keep 'em separate
 			mlmode = xTurnGlobal === (I % 2 === 0);
 			runMCTS(timeToThink);
 			fpaim();
@@ -1564,22 +1562,22 @@ function mlEvaluate(numGames, timeToThink, fileName) {
 				if (I % 2 === 0) {
 					v11++;
 					if (output)
-						console.log(I + " c1 wins");
+						console.log(I + " ml wins");
 				} else {
 					v21++;
 					if (output)
-						console.log(I + " c2 wins");
+						console.log(I + " w/o ml wins");
 				}
 				break;
 			case 6:
 				if (I % 2 === 0) {
 					v22++;
 					if (output)
-						console.log(I + " c2 wins");
+						console.log(I + " w/o ml wins");
 				} else {
 					v12++;
 					if (output)
-						console.log(I + " c1 wins");
+						console.log(I + " ml wins");
 				}
 				break;
 		}
@@ -1680,9 +1678,9 @@ class MlStates {
 		    xs = state.results[1],
 		    os = state.results[2];
 		var ran = Math.random() * (ties + xs + os);
-		if (ran <= ties)
+		if (ran < ties)
 			return 0;
-		else if (ran <= xs)
+		else if (ran < xs)
 			return 1;
 		else return 2;
 	}
@@ -1725,7 +1723,7 @@ function getHash(turn, board) {
 	for (var i = 0; i < board.length; i++)
 		for (var a = 0; a < board[i].length; a++)
 			if (board[i][a] !== 0)
-				hash[i + 1] += (board[i][a] - 1) * Math.pow(6, a);
+				hash[i + 1] += board[i][a] * Math.pow(7, a);
 
 	return hash;
 }
